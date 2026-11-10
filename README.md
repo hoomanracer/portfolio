@@ -1,32 +1,44 @@
-# React + TypeScript + Vite
+# Portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A responsive portfolio website built with React, TypeScript, and Vite, designed with a solarized-inspired visual theme and a subtle animated matrix-style background.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Responsive single-page portfolio layout
+- Dark/light theme toggle
+- Scroll-driven section navigation
+- Animated background and refined motion effects
+- Clean project and professional experience sections
+- GitHub Pages deployment ready
 
-## React Compiler
+## Local development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Then open the local URL shown by Vite in your browser.
+
+## Production build
+
+```bash
+npm run build
+```
+
+## Deployment
+
+This project is configured for GitHub Pages deployment through GitHub Actions.
+
+1. Push this repository to GitHub.
+2. In GitHub, open the repository settings.
+3. Go to Pages and select Source: GitHub Actions.
+4. The workflow in `.github/workflows/deploy.yml` will build and publish the site automatically on pushes to the default branch.
+
+The deployed site will be available at:
+
+https://hoomanracer.github.io/portfolio/
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
