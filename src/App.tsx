@@ -64,7 +64,7 @@ const MY_PROJECTS: Project[] = [
   {
     id: '2',
     title: 'Personal Website',
-    description: 'Side project personal website built with React and TypeScript, showcasing my portfolio, projects, and professional experience.',
+    description: 'Personal website built with React and TypeScript as a side project, showcasing my portfolio, projects, and experience.',
     tags: ['React', 'TypeScript', 'Tailwind CSS'],
     githubUrl: 'https://github.com/hoomanracer/portfolio',
   },
@@ -123,7 +123,7 @@ const MY_LICENSES: License[] = [
 const MOBILE_NAV_EDGE_PADDING = 22;
 
 export default function App() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [activeSection, setActiveSection] = useState('about');
   const activeSectionIndex = SECTION_LINKS.findIndex(({ id }) => id === activeSection);
   const mobileNavButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -422,7 +422,7 @@ export default function App() {
 
           {/* Experience Section */}
           <section id="experience" className="space-y-6 scroll-mt-24">
-            <h2 className="text-2xl font-semibold tracking-tight text-[var(--fg-strong)]">Professional Experience</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-[var(--fg-strong)]">Experience</h2>
             <ExperienceList experiences={MY_EXPERIENCES} />
           </section>
 
@@ -448,7 +448,7 @@ export default function App() {
 
         {/* Footer */}
         <footer className="max-w-4xl mx-auto px-6 py-8 border-t border-[var(--border)] text-sm text-[var(--fg-muted)] flex justify-between items-center">
-          <p>© {CURRENT_YEAR} Nicolás Muñoz. All rights reserved.</p>
+          <p>{CURRENT_YEAR} · Nicolás Muñoz Amrani · :</p>
         </footer>
 
       </div>
