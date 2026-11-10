@@ -128,6 +128,7 @@ export default function App() {
   const activeSectionIndex = SECTION_LINKS.findIndex(({ id }) => id === activeSection);
   const mobileNavButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const mobileNavListRef = useRef<HTMLUListElement | null>(null);
+  const isProgrammaticNavScrollRef = useRef(false);
 
   const centerMobileNavItem = (sectionId: string) => {
     const index = SECTION_LINKS.findIndex(({ id }) => id === sectionId);
@@ -145,10 +146,14 @@ export default function App() {
     navList.style.paddingRight = `${edgeMargin}px`;
 
     const targetLeft = activeButton.offsetLeft + activeButton.offsetWidth / 2 - navCenter;
+    isProgrammaticNavScrollRef.current = true;
     navList.scrollTo({
       left: targetLeft,
       behavior: 'smooth',
     });
+    window.setTimeout(() => {
+      isProgrammaticNavScrollRef.current = false;
+    }, 350);
   };
 
   useEffect(() => {
@@ -227,19 +232,11 @@ export default function App() {
     centerMobileNavItem(id);
   };
 
-  const handleMobileNavWheel = (event: React.WheelEvent<HTMLUListElement>) => {
+  const handleMobileNavScroll = () => {
     const navList = mobileNavListRef.current;
-    if (!navList) {
+    if (!navList || isProgrammaticNavScrollRef.current) {
       return;
     }
-
-    const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    if (delta === 0) {
-      return;
-    }
-
-    event.preventDefault();
-    navList.scrollLeft += delta;
 
     const center = navList.scrollLeft + navList.clientWidth / 2;
     let nearestIndex = 0;
@@ -258,10 +255,32 @@ export default function App() {
       }
     });
 
-    const selectedId = SECTION_LINKS[nearestIndex].id;
-    if (selectedId !== activeSection) {
-      setActiveSection(selectedId);
+    const nextSectionId = SECTION_LINKS[nearestIndex].id;
+    if (nextSectionId !== activeSection) {
+      setActiveSection(nextSectionId);
+      const section = document.getElementById(nextSectionId);
+      section?.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
+  };
+
+  const handleMobileNavWheel = (event: React.WheelEvent<HTMLUListElement>) => {
+    const navList = mobileNavListRef.current;
+    if (!navList) {
+      return;
+    }
+
+    const canScrollHorizontally = navList.scrollWidth > navList.clientWidth;
+    if (!canScrollHorizontally) {
+      return;
+    }
+
+    const isHorizontalScroll = Math.abs(event.deltaX) > Math.abs(event.deltaY);
+    if (!isHorizontalScroll) {
+      return;
+    }
+
+    event.preventDefault();
+    navList.scrollLeft += event.deltaX;
   };
 
   return (
@@ -310,12 +329,14 @@ export default function App() {
             >
               <ul
                 ref={mobileNavListRef}
+                onScroll={handleMobileNavScroll}
                 onWheel={handleMobileNavWheel}
                 className="flex h-full items-center gap-1 overflow-x-auto overflow-y-hidden scroll-smooth whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 style={{
                   scrollSnapType: 'x proximity',
-                  touchAction: 'pan-y',
+                  touchAction: 'pan-x pinch-zoom',
                   overscrollBehaviorX: 'contain',
+                  WebkitOverflowScrolling: 'touch',
                   WebkitMaskImage:
                     'linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, transparent 100%)',
                   maskImage:
