@@ -223,11 +223,11 @@ export default function App() {
     };
   }, []);
 
-  const scrollToSection = (id: string) => {
+  const scrollToSection = (id: string, behavior: ScrollBehavior = 'smooth') => {
     const element = document.getElementById(id);
     if (!element) return;
 
-    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    element.scrollIntoView({ behavior, block: 'start' });
     setActiveSection(id);
     centerMobileNavItem(id);
   };
@@ -258,9 +258,34 @@ export default function App() {
     const nextSectionId = SECTION_LINKS[nearestIndex].id;
     if (nextSectionId !== activeSection) {
       setActiveSection(nextSectionId);
-      const section = document.getElementById(nextSectionId);
-      section?.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
+  };
+
+  const handleMobileNavRelease = () => {
+    const navList = mobileNavListRef.current;
+    if (!navList) {
+      return;
+    }
+
+    const center = navList.scrollLeft + navList.clientWidth / 2;
+    let nearestIndex = 0;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    SECTION_LINKS.forEach((_, index) => {
+      const button = mobileNavButtonRefs.current[index];
+      if (!button) return;
+
+      const buttonCenter = button.offsetLeft + button.offsetWidth / 2;
+      const distance = Math.abs(buttonCenter - center);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = index;
+      }
+    });
+
+    const nextSectionId = SECTION_LINKS[nearestIndex].id;
+    scrollToSection(nextSectionId, 'auto');
   };
 
   const handleMobileNavWheel = (event: React.WheelEvent<HTMLUListElement>) => {
@@ -317,7 +342,7 @@ export default function App() {
           className="fixed right-5 top-5 z-50 hidden h-11 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel)]/85 px-3 text-sm font-medium text-[var(--fg-strong)] shadow-md backdrop-blur-sm transition hover:border-[var(--fg-muted)] min-[1280px]:inline-flex"
           aria-label="Toggle light and dark mode"
         >
-          <span aria-hidden="true">{darkMode ? '☀︎︎' : '⏾'}</span>
+          <span aria-hidden="true">{darkMode ? '☀︎︎' : '❍'}</span>
           {darkMode ? 'Light' : 'Dark'}
         </button>
 
@@ -330,6 +355,8 @@ export default function App() {
               <ul
                 ref={mobileNavListRef}
                 onScroll={handleMobileNavScroll}
+                onTouchEnd={handleMobileNavRelease}
+                onMouseUp={handleMobileNavRelease}
                 onWheel={handleMobileNavWheel}
                 className="flex h-full items-center gap-1 overflow-x-auto overflow-y-hidden scroll-smooth whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 style={{
@@ -383,7 +410,7 @@ export default function App() {
               className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--panel)]/85 px-3 text-sm font-medium text-[var(--fg-strong)] shadow-md backdrop-blur-sm transition hover:border-[var(--fg-muted)] min-[1280px]:hidden"
               aria-label="Toggle light and dark mode"
             >
-              <span aria-hidden="true">{darkMode ? '☀︎︎' : '⏾'}</span>
+              <span aria-hidden="true">{darkMode ? '☀︎︎' : '❍'}</span>
               {darkMode ? 'Light' : 'Dark'}
             </button>
           </div>
