@@ -130,30 +130,61 @@ export default function App() {
   const mobileNavListRef = useRef<HTMLUListElement | null>(null);
   const isProgrammaticNavScrollRef = useRef(false);
 
+  const isUserDraggingNavRef = useRef(false);
+  const navScrollStartRef = useRef(0);
+  const navSettleTimeoutRef = useRef<number | null>(null);
+
+  const snapNavToNearest = () => {
+    const navList = mobileNavListRef.current;
+    if (!navList) return;
+
+    const center = navList.scrollLeft + navList.clientWidth / 2;
+    let nearestIndex = 0;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    mobileNavButtonRefs.current.forEach((button, index) => {
+      if (!button) return;
+      const distance = Math.abs(button.offsetLeft + button.offsetWidth / 2 - center);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = index;
+      }
+    });
+
+    scrollToSection(SECTION_LINKS[nearestIndex].id);
+  };
+
+  const scheduleNavSettle = () => {
+    if (navSettleTimeoutRef.current) window.clearTimeout(navSettleTimeoutRef.current);
+    navSettleTimeoutRef.current = window.setTimeout(() => {
+      const navList = mobileNavListRef.current;
+      const moved = navList && Math.abs(navList.scrollLeft - navScrollStartRef.current) > 2;
+      isUserDraggingNavRef.current = false;
+      if (moved) snapNavToNearest();
+    }, 150);
+  };
+
+  const handleNavTouchStart = () => {
+    isUserDraggingNavRef.current = true;
+    navScrollStartRef.current = mobileNavListRef.current?.scrollLeft ?? 0;
+    if (navSettleTimeoutRef.current) window.clearTimeout(navSettleTimeoutRef.current);
+  };
+
+  const handleMobileNavScroll = () => {
+    // Ignore scrolls caused by our own code; only react to the user's swipe
+    if (!isUserDraggingNavRef.current) return;
+    scheduleNavSettle();
+  };
+
   const centerMobileNavItem = (sectionId: string) => {
     const index = SECTION_LINKS.findIndex(({ id }) => id === sectionId);
     const activeButton = mobileNavButtonRefs.current[index];
     const navList = mobileNavListRef.current;
+    if (!activeButton || !navList) return;
 
-    if (!activeButton || !navList) {
-      return;
-    }
-
-    const navCenter = navList.clientWidth / 2;
-    const edgeMargin = Math.max(MOBILE_NAV_EDGE_PADDING, navCenter);
-
-    navList.style.paddingLeft = `${edgeMargin}px`;
-    navList.style.paddingRight = `${edgeMargin}px`;
-
-    const targetLeft = activeButton.offsetLeft + activeButton.offsetWidth / 2 - navCenter;
-    isProgrammaticNavScrollRef.current = true;
-    navList.scrollTo({
-      left: targetLeft,
-      behavior: 'smooth',
-    });
-    window.setTimeout(() => {
-      isProgrammaticNavScrollRef.current = false;
-    }, 350);
+    const targetLeft =
+      activeButton.offsetLeft + activeButton.offsetWidth / 2 - navList.clientWidth / 2;
+    navList.scrollTo({ left: targetLeft, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -230,35 +261,6 @@ export default function App() {
     element.scrollIntoView({ behavior, block: 'start' });
     setActiveSection(id);
     centerMobileNavItem(id);
-  };
-
-  const handleMobileNavScroll = () => {
-    const navList = mobileNavListRef.current;
-    if (!navList || isProgrammaticNavScrollRef.current) {
-      return;
-    }
-
-    const center = navList.scrollLeft + navList.clientWidth / 2;
-    let nearestIndex = 0;
-    let nearestDistance = Number.POSITIVE_INFINITY;
-
-    SECTION_LINKS.forEach((_, index) => {
-      const button = mobileNavButtonRefs.current[index];
-      if (!button) return;
-
-      const buttonCenter = button.offsetLeft + button.offsetWidth / 2;
-      const distance = Math.abs(buttonCenter - center);
-
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestIndex = index;
-      }
-    });
-
-    const nextSectionId = SECTION_LINKS[nearestIndex].id;
-    if (nextSectionId !== activeSection) {
-      setActiveSection(nextSectionId);
-    }
   };
 
   const handleMobileNavRelease = () => {
@@ -354,14 +356,13 @@ export default function App() {
             >
               <ul
                 ref={mobileNavListRef}
+                onTouchStart={handleNavTouchStart}
+                onTouchEnd={scheduleNavSettle}
+                onTouchCancel={scheduleNavSettle}
                 onScroll={handleMobileNavScroll}
-                onTouchEnd={handleMobileNavRelease}
-                onMouseUp={handleMobileNavRelease}
-                onWheel={handleMobileNavWheel}
-                className="flex h-full items-center gap-1 overflow-x-auto overflow-y-hidden scroll-smooth whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                className="flex h-full items-center gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap px-[40%] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 style={{
-                  scrollSnapType: 'x proximity',
-                  touchAction: 'pan-x pinch-zoom',
+                  touchAction: 'pan-x',
                   overscrollBehaviorX: 'contain',
                   WebkitOverflowScrolling: 'touch',
                   WebkitMaskImage:
