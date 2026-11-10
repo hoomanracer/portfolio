@@ -227,6 +227,43 @@ export default function App() {
     centerMobileNavItem(id);
   };
 
+  const handleMobileNavWheel = (event: React.WheelEvent<HTMLUListElement>) => {
+    const navList = mobileNavListRef.current;
+    if (!navList) {
+      return;
+    }
+
+    const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+    if (delta === 0) {
+      return;
+    }
+
+    event.preventDefault();
+    navList.scrollLeft += delta;
+
+    const center = navList.scrollLeft + navList.clientWidth / 2;
+    let nearestIndex = 0;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    SECTION_LINKS.forEach((_, index) => {
+      const button = mobileNavButtonRefs.current[index];
+      if (!button) return;
+
+      const buttonCenter = button.offsetLeft + button.offsetWidth / 2;
+      const distance = Math.abs(buttonCenter - center);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = index;
+      }
+    });
+
+    const selectedId = SECTION_LINKS[nearestIndex].id;
+    if (selectedId !== activeSection) {
+      setActiveSection(selectedId);
+    }
+  };
+
   return (
     <div className={darkMode ? 'theme-dark' : 'theme-light'}>
       <div className="min-h-screen bg-[var(--bg)] text-[var(--fg-strong)] transition-colors duration-200">
@@ -273,6 +310,7 @@ export default function App() {
             >
               <ul
                 ref={mobileNavListRef}
+                onWheel={handleMobileNavWheel}
                 className="flex h-full items-center gap-1 overflow-x-auto overflow-y-hidden scroll-smooth whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 style={{
                   scrollSnapType: 'x proximity',
