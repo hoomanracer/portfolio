@@ -370,7 +370,7 @@ export default function App() {
         <main className="max-w-4xl mx-auto px-6 py-12 space-y-16">
           
           {/* Hero Section */}
-          <section id="about" className="scroll-mt-24 flex flex-col items-center gap-8 rounded-2xl border border-[var(--border)] bg-[var(--panel)]/80 p-6 shadow-sm sm:p-8 md:flex-row md:items-center md:justify-between md:gap-10">
+          <section id="about" className="scroll-mt-24 flex flex-col items-center mt-5 gap-8 rounded-2xl border border-[var(--border)] bg-[var(--panel)]/80 p-6 shadow-sm sm:p-8 md:flex-row md:items-center md:justify-between md:gap-10">
             <div className="flex-shrink-0">
               <img
                 src={profileImage}
