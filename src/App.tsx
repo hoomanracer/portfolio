@@ -127,12 +127,14 @@ export default function App() {
   const mobileNavButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const mobileNavListRef = useRef<HTMLUListElement | null>(null);
 
-  const navTouchRef = useRef(0); // Infinity while touching, else time of last touch
-
+  const navTouchingRef = useRef(false);   // finger is on the nav
+  const navSwipingRef = useRef(false);    // swipe in progress (finger down or still gliding)
+  const navStartLeftRef = useRef(0);
+  const navSettleTimerRef = useRef<number | null>(null);
+  const selectionLockUntilRef = useRef(0); // briefly ignore scroll-driven highlight changes after a swipe jump
 
   const centerMobileNavItem = (sectionId: string) => {
-    // don't move the nav while the user is touching it or it's still flinging
-    if (Date.now() - navTouchRef.current < 800) return;
+    if (navSwipingRef.current) return; // never move the nav under the user's finger
     const index = SECTION_LINKS.findIndex(({ id }) => id === sectionId);
     const activeButton = mobileNavButtonRefs.current[index];
     const navList = mobileNavListRef.current;
@@ -141,6 +143,33 @@ export default function App() {
     const targetLeft =
       activeButton.offsetLeft + activeButton.offsetWidth / 2 - navList.clientWidth / 2;
     navList.scrollTo({ left: targetLeft, behavior: 'smooth' });
+  };
+
+  const settleNavSwipe = () => {
+    const navList = mobileNavListRef.current;
+    navSwipingRef.current = false;
+    if (!navList) return;
+    if (Math.abs(navList.scrollLeft - navStartLeftRef.current) < 3) return; // a tap, not a swipe
+
+    const center = navList.scrollLeft + navList.clientWidth / 2;
+    let nearest = 0;
+    let best = Number.POSITIVE_INFINITY;
+    mobileNavButtonRefs.current.forEach((button, index) => {
+      if (!button) return;
+      const d = Math.abs(button.offsetLeft + button.offsetWidth / 2 - center);
+      if (d < best) {
+        best = d;
+        nearest = index;
+      }
+    });
+
+    selectionLockUntilRef.current = Date.now() + 400;
+    scrollToSection(SECTION_LINKS[nearest].id, 'auto');
+  };
+
+  const armNavSettle = () => {
+    if (navSettleTimerRef.current) window.clearTimeout(navSettleTimerRef.current);
+    navSettleTimerRef.current = window.setTimeout(settleNavSwipe, 120);
   };
 
   useEffect(() => {
@@ -159,6 +188,7 @@ export default function App() {
     }
 
     const updateActiveSection = () => {
+      if (Date.now() < selectionLockUntilRef.current) return;
       const viewportAnchor = window.innerHeight * 0.35;
       let closestId = SECTION_LINKS[0].id;
       let closestDistance = Number.POSITIVE_INFINITY;
@@ -179,6 +209,7 @@ export default function App() {
 
     const observer = new IntersectionObserver(
       (entries) => {
+        if (Date.now() < selectionLockUntilRef.current) return;
         const visibleEntries = entries
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
@@ -274,10 +305,23 @@ export default function App() {
               >
                 <ul
                   ref={mobileNavListRef}
-                  onTouchMove={() => { navTouchRef.current = Infinity; }}
-                  onTouchEnd={() => { if (navTouchRef.current === Infinity) navTouchRef.current = Date.now(); }}
-                  onTouchCancel={() => { if (navTouchRef.current === Infinity) navTouchRef.current = Date.now(); }}
-                  className="flex h-full items-center gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap px-[40%] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                  onTouchStart={() => {
+                    navTouchingRef.current = true;
+                    navStartLeftRef.current = mobileNavListRef.current?.scrollLeft ?? 0;
+                  }}
+                  onTouchEnd={() => {
+                    navTouchingRef.current = false;
+                    if (navSwipingRef.current) armNavSettle();
+                  }}
+                  onTouchCancel={() => {
+                    navTouchingRef.current = false;
+                    if (navSwipingRef.current) armNavSettle();
+                  }}
+                  onScroll={() => {
+                    if (navTouchingRef.current) navSwipingRef.current = true;
+                    if (navSwipingRef.current) armNavSettle();
+                  }}
+                  className="relative flex h-full snap-x snap-mandatory items-center gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap px-[50%] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                   style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}
                 >
                   {SECTION_LINKS.map(({ id, label }, index) => {
@@ -286,7 +330,7 @@ export default function App() {
                     const opacity = isActive ? 1 : distance === 1 ? 0.72 : distance === 2 ? 0.38 : 0.18;
 
                     return (
-                      <li key={id} className="shrink-0">
+                      <li key={id} className="shrink-0 snap-center">
                         <button
                           ref={(element) => {
                             mobileNavButtonRefs.current[index] = element;
