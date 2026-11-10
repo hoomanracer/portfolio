@@ -120,63 +120,19 @@ const MY_LICENSES: License[] = [
   },
 ];
 
-const MOBILE_NAV_EDGE_PADDING = 22;
-
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [activeSection, setActiveSection] = useState('about');
   const activeSectionIndex = SECTION_LINKS.findIndex(({ id }) => id === activeSection);
   const mobileNavButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const mobileNavListRef = useRef<HTMLUListElement | null>(null);
-  const isProgrammaticNavScrollRef = useRef(false);
 
-  const isUserDraggingNavRef = useRef(false);
-  const navScrollStartRef = useRef(0);
-  const navSettleTimeoutRef = useRef<number | null>(null);
+  const navTouchRef = useRef(0); // Infinity while touching, else time of last touch
 
-  const snapNavToNearest = () => {
-    const navList = mobileNavListRef.current;
-    if (!navList) return;
-
-    const center = navList.scrollLeft + navList.clientWidth / 2;
-    let nearestIndex = 0;
-    let nearestDistance = Number.POSITIVE_INFINITY;
-
-    mobileNavButtonRefs.current.forEach((button, index) => {
-      if (!button) return;
-      const distance = Math.abs(button.offsetLeft + button.offsetWidth / 2 - center);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestIndex = index;
-      }
-    });
-
-    scrollToSection(SECTION_LINKS[nearestIndex].id);
-  };
-
-  const scheduleNavSettle = () => {
-    if (navSettleTimeoutRef.current) window.clearTimeout(navSettleTimeoutRef.current);
-    navSettleTimeoutRef.current = window.setTimeout(() => {
-      const navList = mobileNavListRef.current;
-      const moved = navList && Math.abs(navList.scrollLeft - navScrollStartRef.current) > 2;
-      isUserDraggingNavRef.current = false;
-      if (moved) snapNavToNearest();
-    }, 150);
-  };
-
-  const handleNavTouchStart = () => {
-    isUserDraggingNavRef.current = true;
-    navScrollStartRef.current = mobileNavListRef.current?.scrollLeft ?? 0;
-    if (navSettleTimeoutRef.current) window.clearTimeout(navSettleTimeoutRef.current);
-  };
-
-  const handleMobileNavScroll = () => {
-    // Ignore scrolls caused by our own code; only react to the user's swipe
-    if (!isUserDraggingNavRef.current) return;
-    scheduleNavSettle();
-  };
 
   const centerMobileNavItem = (sectionId: string) => {
+    // don't move the nav while the user is touching it or it's still flinging
+    if (Date.now() - navTouchRef.current < 800) return;
     const index = SECTION_LINKS.findIndex(({ id }) => id === sectionId);
     const activeButton = mobileNavButtonRefs.current[index];
     const navList = mobileNavListRef.current;
@@ -263,53 +219,6 @@ export default function App() {
     centerMobileNavItem(id);
   };
 
-  const handleMobileNavRelease = () => {
-    const navList = mobileNavListRef.current;
-    if (!navList) {
-      return;
-    }
-
-    const center = navList.scrollLeft + navList.clientWidth / 2;
-    let nearestIndex = 0;
-    let nearestDistance = Number.POSITIVE_INFINITY;
-
-    SECTION_LINKS.forEach((_, index) => {
-      const button = mobileNavButtonRefs.current[index];
-      if (!button) return;
-
-      const buttonCenter = button.offsetLeft + button.offsetWidth / 2;
-      const distance = Math.abs(buttonCenter - center);
-
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestIndex = index;
-      }
-    });
-
-    const nextSectionId = SECTION_LINKS[nearestIndex].id;
-    scrollToSection(nextSectionId, 'auto');
-  };
-
-  const handleMobileNavWheel = (event: React.WheelEvent<HTMLUListElement>) => {
-    const navList = mobileNavListRef.current;
-    if (!navList) {
-      return;
-    }
-
-    const canScrollHorizontally = navList.scrollWidth > navList.clientWidth;
-    if (!canScrollHorizontally) {
-      return;
-    }
-
-    const isHorizontalScroll = Math.abs(event.deltaX) > Math.abs(event.deltaY);
-    if (!isHorizontalScroll) {
-      return;
-    }
-
-    event.preventDefault();
-    navList.scrollLeft += event.deltaX;
-  };
-
   return (
     <div className={darkMode ? 'theme-dark' : 'theme-light'}>
       <div className="min-h-screen bg-[var(--bg)] text-[var(--fg-strong)] transition-colors duration-200">
@@ -351,58 +260,54 @@ export default function App() {
         <div className="fixed inset-x-0 top-0 z-40 flex justify-center pt-3 min-[1280px]:hidden">
           <div className="flex items-center gap-2">
             <div
-              className="h-11 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--panel)]/85 shadow-md backdrop-blur-sm"
+              className="h-11 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--panel)]/95 shadow-md"
               style={{ width: 'clamp(170px, 38vw, 260px)' }}
             >
-              <ul
-                ref={mobileNavListRef}
-                onTouchStart={handleNavTouchStart}
-                onTouchEnd={scheduleNavSettle}
-                onTouchCancel={scheduleNavSettle}
-                onScroll={handleMobileNavScroll}
-                className="flex h-full items-center gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap px-[40%] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              <div
+                className="h-full"
                 style={{
-                  touchAction: 'pan-x',
-                  overscrollBehaviorX: 'contain',
-                  WebkitOverflowScrolling: 'touch',
                   WebkitMaskImage:
-                    'linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, transparent 100%)',
+                    'linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%)',
                   maskImage:
-                    'linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 10%, rgba(0,0,0,1) 90%, transparent 100%)',
+                    'linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%)',
                 }}
               >
-                {SECTION_LINKS.map(({ id, label }, index) => {
-                  const isActive = activeSection === id;
-                  const distance = Math.abs(index - activeSectionIndex);
-                  const opacity = isActive ? 1 : distance === 1 ? 0.72 : distance === 2 ? 0.38 : 0.18;
+                <ul
+                  ref={mobileNavListRef}
+                  onTouchMove={() => { navTouchRef.current = Infinity; }}
+                  onTouchEnd={() => { if (navTouchRef.current === Infinity) navTouchRef.current = Date.now(); }}
+                  onTouchCancel={() => { if (navTouchRef.current === Infinity) navTouchRef.current = Date.now(); }}
+                  className="flex h-full items-center gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap px-[40%] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                  style={{ touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}
+                >
+                  {SECTION_LINKS.map(({ id, label }, index) => {
+                    const isActive = activeSection === id;
+                    const distance = Math.abs(index - activeSectionIndex);
+                    const opacity = isActive ? 1 : distance === 1 ? 0.72 : distance === 2 ? 0.38 : 0.18;
 
-                  return (
-                    <li key={id} className="shrink-0">
-                      <button
-                        ref={(element) => {
-                          mobileNavButtonRefs.current[index] = element;
-                        }}
-                        type="button"
-                        onClick={() => scrollToSection(id)}
-                        className={`flex h-8 items-center rounded-full px-2 text-[10px] font-medium tracking-[0.12em] uppercase transition-all duration-200 ${
-                          isActive
-                            ? 'bg-[var(--panel-alt)] text-[var(--fg-strong)] shadow-sm'
-                            : 'text-[var(--fg-muted)] hover:text-[var(--fg-strong)]'
-                        }`}
-                        style={{
-                          opacity,
-                          whiteSpace: 'nowrap',
-                          scrollSnapAlign: 'center',
-                          scrollSnapStop: 'always',
-                        }}
-                        aria-label={`Go to ${label}`}
-                      >
-                        {label}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                    return (
+                      <li key={id} className="shrink-0">
+                        <button
+                          ref={(element) => {
+                            mobileNavButtonRefs.current[index] = element;
+                          }}
+                          type="button"
+                          onClick={() => scrollToSection(id)}
+                          className={`flex h-8 items-center rounded-full px-2 text-[10px] font-medium tracking-[0.12em] uppercase transition-colors duration-200 ${
+                            isActive
+                              ? 'bg-[var(--panel-alt)] text-[var(--fg-strong)] shadow-sm'
+                              : 'text-[var(--fg-muted)] hover:text-[var(--fg-strong)]'
+                          }`}
+                          style={{ opacity, whiteSpace: 'nowrap' }}
+                          aria-label={`Go to ${label}`}
+                        >
+                          {label}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </div>
 
             <button
