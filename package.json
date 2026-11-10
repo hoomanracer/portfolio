@@ -2,13 +2,12 @@
   "name": "portfolio",
   "private": true,
   "version": "1.0.0",
-  "homepage": "https://hoomanracer.github.io/portfolio/",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.5",
