@@ -11,9 +11,11 @@ export interface Project {
 
 interface ProjectListProps {
   projects: Project[];
+  githubLabel?: string;
+  liveDemoLabel?: string;
 }
 
-export function ProjectList({ projects }: ProjectListProps) {
+export function ProjectList({ projects, githubLabel = 'GitHub', liveDemoLabel = 'Live Demo' }: ProjectListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {projects.map((project) => (
@@ -52,7 +54,7 @@ export function ProjectList({ projects }: ProjectListProps) {
                   rel="noopener noreferrer"
                   className="font-medium text-[var(--accent)] hover:underline flex items-center gap-1.5"
                 >
-                  GitHub &rarr;
+                  {githubLabel} &rarr;
                 </a>
               )}
               {project.liveUrl && (
@@ -62,7 +64,7 @@ export function ProjectList({ projects }: ProjectListProps) {
                   rel="noopener noreferrer"
                   className="font-medium text-[var(--accent-alt)] hover:underline flex items-center gap-1.5"
                 >
-                  Live Demo &rarr;
+                  {liveDemoLabel} &rarr;
                 </a>
               )}
             </div>

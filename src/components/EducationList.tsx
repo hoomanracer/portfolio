@@ -10,9 +10,10 @@ export interface Education {
 
 interface EducationListProps {
   education: Education[];
+  presentLabel?: string;
 }
 
-export function EducationList({ education }: EducationListProps) {
+export function EducationList({ education, presentLabel = 'Present' }: EducationListProps) {
   return (
     <div className="space-y-6">
         {education.map((edu) => (
@@ -28,7 +29,7 @@ export function EducationList({ education }: EducationListProps) {
                         {edu.institution}
                     </h4>
                     <p className="mt-1 text-sm text-[var(--fg-muted)]">
-                        {edu.startYear} - {edu.endYear || 'Present'}
+                        {edu.startYear} - {edu.endYear || presentLabel}
                     </p>
                     {/* Bullet Points */}
                     <ul className="space-y-2 list-disc pl-5 text-sm leading-relaxed text-[var(--fg)]">

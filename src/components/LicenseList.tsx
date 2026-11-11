@@ -9,9 +9,10 @@ export interface License {
 
 interface LicenseListProps {
     licenses: License[];
+    viewLicenseLabel?: string;
 }
 
-export function LicenseList({ licenses }: LicenseListProps) {
+export function LicenseList({ licenses, viewLicenseLabel = 'View License' }: LicenseListProps) {
     return (
         <div className="space-y-6">
             {licenses.map((license) => (
@@ -41,7 +42,7 @@ export function LicenseList({ licenses }: LicenseListProps) {
                                 rel="noopener noreferrer"
                                 className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
                             >
-                                View License
+                                {viewLicenseLabel}
                                 <span aria-hidden="true">→</span>
                             </a>
                         )}
